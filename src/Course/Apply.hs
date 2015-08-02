@@ -106,8 +106,8 @@ instance Apply ((->) t) where
 -- 18
 
 lift2 :: Apply f => (a -> b -> c) -> f a -> f b -> f c
-lift2 =
-  error "todo: Course.Apply#lift2"
+lift2 f a b = f <$> a <*> b
+
 
 -- | Apply a ternary function in the environment.
 --
@@ -133,8 +133,10 @@ lift2 =
 -- 138
 
 lift3 :: Apply f => (a -> b -> c -> d) -> f a -> f b -> f c -> f d
-lift3 =
-  error "todo: Course.Apply#lift3"
+lift3 f a b c = f <$> a <*> b <*> c
+
+-- lift2 f a b <*> c
+
 
 -- | Apply a quaternary function in the environment.
 --
@@ -160,8 +162,10 @@ lift3 =
 -- 148
 
 lift4 :: Apply f => (a -> b -> c -> d -> e) -> f a -> f b -> f c -> f d -> f e
-lift4 =
-  error "todo: Course.Apply#lift4"
+lift4 f a b c d = f <$> a <*> b <*> c <*> d
+
+-- lift3 f a b c <*> d
+
 
 -- | Sequence, discarding the value of the first argument.
 -- Pronounced, right apply.
