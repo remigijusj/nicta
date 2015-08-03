@@ -104,8 +104,10 @@ instance Applicative ((->) t) where
 -- [60,8]
 
 sequence :: Applicative f => List (f a) -> f (List a)
-sequence =
-  error "todo: Course.Applicative#sequence"
+sequence = foldRight (lift2 (:.)) (pure Nil)
+
+-- see seqOptional, twiceOptional ~ lift2
+
 
 -- | Replicate an effect a given number of times.
 --
@@ -125,8 +127,11 @@ sequence =
 -- ["aaa","aab","aac","aba","abb","abc","aca","acb","acc","baa","bab","bac","bba","bbb","bbc","bca","bcb","bcc","caa","cab","cac","cba","cbb","cbc","cca","ccb","ccc"]
 
 replicateA :: Applicative f => Int -> f a -> f (List a)
-replicateA =
-  error "todo: Course.Applicative#replicateA"
+replicateA n = sequence . replicate n
+
+-- replicate n :: a -> List a
+-- (<$>) (replicate n) :: f a -> f (List a) -- Wrong! last test: ["aaa","bbb","ccc"]
+
 
 -- | Filter a list with a predicate that produces an effect.
 --
@@ -150,9 +155,13 @@ replicateA =
 --
 
 filtering :: Applicative f => (a -> f Bool) -> List a -> f (List a)
-filtering =
-  error "todo: Course.Applicative#filtering"
+filtering p = foldRight (\a -> lift2 (\b -> if b then (a :.) else id) (p a)) (pure Nil)
 
+-- filter :: (a -> Bool) -> List a -> List a
+-- filter = foldRight (\h xs -> if p h then h :. xs else xs) Nil
+-- ??? :: a -> f (List a) -> f (List a)
+-- lift2 :: (a -> List a -> List a) -> f a -> f (List a) -> f (List a)
+-- not done
 
 -----------------------
 -- SUPPORT LIBRARIES --
