@@ -187,8 +187,13 @@ lift4 f a b c d = f <$> a <*> b <*> c <*> d
 -- prop> Full x *> Full y == Full y
 
 (*>) :: Apply f => f a -> f b -> f b
-(*>) =
-  error "todo: Course.Apply#(*>)"
+(*>) = lift2 (const id)
+
+--                   (<*>) :: f (a -> b) -> f a -> f b
+-- ((const id) <$>) :: f a -> f (b -> b)
+-- (*>) = (<*>) . ((const id) <$>)
+-- (*>) = (const id) <$> a <*> b
+
 
 -- | Sequence, discarding the value of the second argument.
 -- Pronounced, left apply.
@@ -210,8 +215,11 @@ lift4 f a b c d = f <$> a <*> b <*> c <*> d
 -- prop> Full x <* Full y == Full x
 
 (<*) :: Apply f => f b -> f a -> f b
-(<*) =
-  error "todo: Course.Apply#(<*)"
+(<*) = lift2 const
+
+-- flip $ const id :: a -> b -> a
+-- (<*) = lift2 (flip $ const id)
+
 
 -----------------------
 -- SUPPORT LIBRARIES --
