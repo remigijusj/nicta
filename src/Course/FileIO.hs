@@ -60,43 +60,50 @@ the contents of c
 -}
 
 -- /Tip:/ use @getArgs@ and @run@
-main ::
-  IO ()
-main =
-  error "todo: Course.FileIO#main"
+main :: IO ()
+main = (run . headOr Nil) =<< getArgs
 
-type FilePath =
-  Chars
+{-
+main = getArgs >>= \args ->
+  case args of
+    file :. Nil -> run file
+    _           -> putStrLn "Usage: runhaskell FileIO.hs filename"
+-}
+
+type FilePath = Chars
 
 -- /Tip:/ Use @getFiles@ and @printFiles@.
-run ::
-  Chars
-  -> IO ()
-run =
-  error "todo: Course.FileIO#run"
+run :: Chars -> IO ()
+run = printFiles <=< getFiles . lines <=< readFile
 
-getFiles ::
-  List FilePath
-  -> IO (List (FilePath, Chars))
-getFiles =
-  error "todo: Course.FileIO#getFiles"
+{-
+run file =
+  do
+    content <- readFile file
+    results <- getFiles (lines content)
+    printFiles results
+-}
 
-getFile ::
-  FilePath
-  -> IO (FilePath, Chars)
-getFile =
-  error "todo: Course.FileIO#getFile"
+getFiles :: List FilePath -> IO (List (FilePath, Chars))
+getFiles names = sequence $ getFile <$> names
 
-printFiles ::
-  List (FilePath, Chars)
-  -> IO ()
-printFiles =
-  error "todo: Course.FileIO#printFiles"
+-- getFiles = sequence . (<$>) getFile
 
-printFile ::
-  FilePath
-  -> Chars
-  -> IO ()
-printFile =
-  error "todo: Course.FileIO#printFile"
+getFile :: FilePath -> IO (FilePath, Chars)
+getFile name = (,) name <$> readFile name
 
+-- getFile = lift2 (<$>) (,) readFile
+
+printFiles :: List (FilePath, Chars) -> IO ()
+printFiles items = void $ sequence $ uncurry printFile <$> items
+
+-- printFiles = void . sequence . (<$>) (uncurry printFile)
+
+printFile :: FilePath -> Chars -> IO ()
+printFile name content = putStrLn $ listh "============ " ++ name ++ listh "\n" ++ content
+
+{-
+printFile name content =
+  putStrLn ("============ " ++ name) >>
+  putStrLn content
+-}
