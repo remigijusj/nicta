@@ -84,16 +84,16 @@ instance Monad (State s) where
 -- prop> \(Fun _ f) -> exec (State f) s == snd (runState (State f) s)
 
 exec :: State s a -> s -> s
-exec =
-  error "todo: Course.State#exec"
+exec (State a) s = snd (a s)
+
 
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
 --
 -- prop> \(Fun _ f) -> eval (State f) s == fst (runState (State f) s)
 
 eval :: State s a -> s -> a
-eval =
-  error "todo: Course.State#eval"
+eval (State a) s = fst (a s)
+
 
 -- | A `State` where the state also distributes into the produced value.
 --
@@ -129,8 +129,15 @@ put x = State (\s -> ((), x))
 -- (Empty,8)
 
 findM :: Monad f => (a -> f Bool) -> List a -> f (Optional a)
-findM =
-  error "todo: Course.State#findM"
+findM p Nil       = pure Empty
+findM p (a :. as) = (\ok -> if ok then return (Full a) else findM p as) =<< p a
+
+-- wrong: goes through the whole collection
+-- findM p as = headOptional <$> (filtering p as)
+-- wrong, same as above
+-- findM p = foldRight (\a -> lift2 (just a) (p a)) (pure Empty)
+-- might use foldM
+
 
 -- | Find the first element in a `List` that repeats.
 -- It is possible that no element repeats, hence an `Optional` result.
@@ -141,8 +148,9 @@ findM =
 -- prop> case firstRepeat xs of Empty -> True; Full x -> let (l, (rx :. rs)) = span (/= x) xs in let (l2, r2) = span (/= x) rs in let l3 = hlist (l ++ (rx :. Nil) ++ l2) in nub l3 == l3
 
 firstRepeat :: Ord a => List a -> Optional a
-firstRepeat =
-  error "todo: Course.State#firstRepeat"
+firstRepeat as = eval (findM p as) S.empty
+  where p a = State (\s -> if S.member a s then (True, s) else (False, S.insert a s))
+
 
 -- | Remove all duplicate elements in a `List`.
 -- /Tip:/ Use `filtering` and `State` with a @Data.Set#Set@.
@@ -152,12 +160,13 @@ firstRepeat =
 -- prop> distinct xs == distinct (flatMap (\x -> x :. x :. Nil) xs)
 
 distinct :: Ord a => List a -> List a
-distinct =
-  error "todo: Course.State#distinct"
+distinct as = eval (filtering p as) S.empty
+  where p a = State (\s -> if S.member a s then (False, s) else (True, S.insert a s))
 
--- | A happy number is a positive integer, where the sum of the square of its digits eventually reaches 1 after repetition.
--- In contrast, a sad number (not a happy number) is where the sum of the square of its digits never reaches 1
--- because it results in a recurring sequence.
+
+-- | A happy number is a positive integer, where the sum of the square of its digits eventually
+-- reaches 1 after repetition. In contrast, a sad number (not a happy number) is where the sum 
+-- of the square of its digits never reaches 1 because it results in a recurring sequence.
 --
 -- /Tip:/ Use `findM` with `State` and `produce`.
 --
@@ -178,5 +187,8 @@ distinct =
 -- True
 
 isHappy :: Integer -> Bool
-isHappy =
-  error "todo: Course.State#isHappy"
+isHappy = contains 1 . firstRepeat . produce square
+
+square :: Integer -> Integer
+square 0 = 0
+square i = let (j, k) = i `divMod` 10 in k * k + square j
