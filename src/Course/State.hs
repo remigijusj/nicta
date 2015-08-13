@@ -54,9 +54,10 @@ mapFst f (x, y) = (f x, y)
 
 instance Apply (State s) where
   (<*>) :: State s (a -> b) -> State s a -> State s b
-  (<*>) (State ff) (State aa) = State (\s0 -> let (f, s1) = ff s0
-                                                  (a, s2) = aa s1
-                                               in (f a, s2))
+  (<*>) (State ff) (State aa) = State bb
+    where bb s0 = let (f, s1) = ff s0
+                      (a, s2) = aa s1
+                   in (f a, s2)
 
 
 -- | Implement the `Applicative` instance for `State s`.
@@ -74,7 +75,9 @@ instance Applicative (State s) where
 
 instance Bind (State s) where
   (=<<) :: (a -> State s b) -> State s a -> State s b
-  (=<<) f (State aa) = State (\s0 -> let (a, s1) = aa s0 in runState (f a) s1)
+  (=<<) f (State aa) = State bb
+    where bb s0 = let (a, s1) = aa s0
+                   in runState (f a) s1
 
 
 instance Monad (State s) where
