@@ -134,8 +134,8 @@ type State' s a =
 -- Id ((),1)
 
 state' :: (s -> (a, s)) -> State' s a
-state' =
-  error "todo: Course.StateT#state'" -- "
+state' f = StateT (Id . f)
+
 
 -- | Provide an unwrapper for `State'` values.
 --
@@ -143,20 +143,20 @@ state' =
 -- ((),1)
 
 runState' :: State' s a -> s -> (a, s)
-runState' =
-  error "todo: Course.StateT#runState'" -- "
+runState' (StateT f) = runId . f
+
 
 -- | Run the `State` seeded with `s` and retrieve the resulting state.
 
 exec' :: State' s a -> s -> s
-exec' =
-  error "todo: Course.StateT#exec'" -- "
+exec' ff = runId . execT ff
+
 
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
 
 eval' :: State' s a -> s -> a
-eval' =
-  error "todo: Course.StateT#eval'" -- '"
+eval' ff = runId . evalT ff
+
 
 -- | Remove all duplicate elements in a `List`.
 --
@@ -165,8 +165,9 @@ eval' =
 -- prop> distinct' xs == distinct' (flatMap (\x -> x :. x :. Nil) xs)
 
 distinct' :: (Ord a, Num a) => List a -> List a
-distinct' =
-  error "todo: Course.StateT#distinct'"
+distinct' as =  eval' (filtering (\a -> state' (S.notMember a &&& S.insert a)) as) S.empty
+-- not done
+
 
 -- | Remove all duplicate elements in a `List`.
 -- However, if you see a value greater than `100` in the list,
