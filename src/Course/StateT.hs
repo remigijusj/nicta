@@ -162,7 +162,7 @@ eval' ff = runId . evalT ff
 
 distinct' :: (Ord a, Num a) => List a -> List a
 distinct' as =  eval' (filtering p as) S.empty
-  where p a = state' (S.notMember a &&& S.insert a)
+  where p = \a -> state' (S.notMember a &&& S.insert a)
 -- not done
 
 
@@ -180,8 +180,8 @@ distinct' as =  eval' (filtering p as) S.empty
 
 distinctF :: (Ord a, Num a) => List a -> Optional (List a)
 distinctF as = evalT (filtering p as) S.empty
-  where p a = StateT (if a > 100 then const Empty else Full . (S.notMember a &&& S.insert a))
-
+  where p = \a -> StateT (t a)
+        t = \a s -> if a > 100 then Empty else Full (S.notMember a s, S.insert a s)
 
 
 -- | An `OptionalT` is a functor of an `Optional` value.
@@ -298,5 +298,19 @@ log1 l = Logger (l :. Nil)
 -- Logger ["even number: 2","even number: 2","even number: 6","aborting > 100: 106"] Empty
 
 distinctG :: (Integral a, Show a) => List a -> Logger Chars (Optional (List a))
-distinctG =
-  error "todo: Course.StateT#distinctG"
+distinctG as = runOptionalT $ evalT (filtering p as) S.empty
+  where p = \a -> StateT $ \s -> if a > 100 then (abort a s) else (check a s)
+        abort = \a _ -> OptionalT $ log1 (listh "aborting > 100: " ++ show' a) Empty -- '
+        check = \a s -> OptionalT $ logx a (Full (S.notMember a s, S.insert a s))
+        logx  = \a o -> if even a then log1 (listh "even number: " ++ show' a) o else Logger Nil o
+
+{-
+-- t :: a -> S.Set a -> Optional (Bool, S.Set a)
+-- p :: a -> StateT (S.Set a) Optional Bool
+-- filtering :: (a -> f Bool) -> List a -> f (List a) // f = StateT (S.Set a) Optional
+
+distinctF :: (Ord a, Num a) => List a -> Optional (List a)
+distinctF as = evalT (filtering p as) S.empty
+  where p = \a -> StateT (t a)
+        t = \a s -> if a > 100 then Empty else Full (S.notMember a s, S.insert a s)
+-}
