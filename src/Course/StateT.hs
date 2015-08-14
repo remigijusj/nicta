@@ -119,6 +119,7 @@ putT :: Monad f => s -> StateT s f ()
 putT x = StateT (\s -> pure ((), x))
 
 
+
 -- | A `State'` is `StateT` specialised to the `Id` functor.
 type State' s a =
   StateT s Id a
@@ -182,6 +183,7 @@ distinctF as = evalT (filtering p as) S.empty
   where p a = StateT (if a > 100 then const Empty else Full . (S.notMember a &&& S.insert a))
 
 
+
 -- | An `OptionalT` is a functor of an `Optional` value.
 
 data OptionalT f a =
@@ -228,6 +230,7 @@ instance Monad f => Bind (OptionalT f) where
 instance Monad f => Monad (OptionalT f) where
 
 
+
 -- | A `Logger` is a pair of a list of log values (`[l]`) and an arbitrary value (`a`).
 data Logger l a =
   Logger (List l) a
@@ -238,24 +241,24 @@ data Logger l a =
 -- >>> (+3) <$> Logger (listh [1,2]) 3
 -- Logger [1,2] 6
 instance Functor (Logger l) where
-  (<$>) =
-    error "todo: Course.StateT (<$>)#instance (Logger l)"
+  (<$>) f (Logger l a) = Logger l (f a)
+
 
 -- | Implement the `Apply` instance for `Logger`.
 --
 -- >>> Logger (listh [1,2]) (+7) <*> Logger (listh [3,4]) 3
 -- Logger [1,2,3,4] 10
 instance Apply (Logger l) where
-  (<*>) =
-    error "todo: Course.StateT (<*>)#instance (Logger l)"
+  (<*>) (Logger k f) (Logger l a) = Logger (k ++ l) (f a)
+
 
 -- | Implement the `Applicative` instance for `Logger`.
 --
 -- >>> pure "table" :: Logger Int P.String
 -- Logger [] "table"
 instance Applicative (Logger l) where
-  pure =
-    error "todo: Course.StateT pure#instance (Logger l)"
+  pure a = Logger Nil a
+
 
 -- | Implement the `Bind` instance for `Logger`.
 -- The `bind` implementation must append log values to maintain associativity.
@@ -263,10 +266,11 @@ instance Applicative (Logger l) where
 -- >>> (\a -> Logger (listh [4,5]) (a+3)) =<< Logger (listh [1,2]) 3
 -- Logger [1,2,4,5] 6
 instance Bind (Logger l) where
-  (=<<) =
-    error "todo: Course.StateT (=<<)#instance (Logger l)"
+  (=<<) f (Logger l a) = let Logger k b = f a in Logger (l ++ k) b
+
 
 instance Monad (Logger l) where
+
 
 
 -- | A utility function for producing a `Logger` with one log value.
@@ -275,8 +279,8 @@ instance Monad (Logger l) where
 -- Logger [1] 2
 
 log1 :: l -> a -> Logger l a
-log1 =
-  error "todo: Course.StateT#log1"
+log1 l = Logger (l :. Nil)
+
 
 -- | Remove all duplicate integers from a list. Produce a log as you go.
 -- If there is an element above 100, then abort the entire computation and produce no result.
