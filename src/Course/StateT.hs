@@ -38,7 +38,7 @@ newtype StateT s f a =
 
 instance Functor f => Functor (StateT s f) where
   (<$>) :: (a -> b) -> StateT s f a -> StateT s f b
-  (<$>) f (StateT aa) = StateT ((mapFst f <$>) . aa)
+  (<$>) f (StateT aa) = StateT (\s -> mapFst f <$> aa s)
 
 
 -- | Implement the `Apply` instance for @StateT s f@ given a @Bind f@.
@@ -55,13 +55,8 @@ instance Functor f => Functor (StateT s f) where
 
 instance Bind f => Apply (StateT s f) where
   (<*>) :: StateT s f (a -> b) -> StateT s f a -> StateT s f b
-  (<*>) (StateT ff) (StateT aa) = StateT bb
-    where bb s0 = error "todo"
-{-
-    where bb s0 = let ff s0 = F (f, s1)
-                      aa s1 = F (a, s2)
-                   in (f a, s2)
--}
+  (<*>) (StateT ff) (StateT aa) = StateT ((\(f, s) -> mapFst f <$> aa s) <=< ff)
+
 
 -- | Implement the `Applicative` instance for @StateT s f@ given a @Applicative f@.
 --
@@ -165,7 +160,8 @@ eval' ff = runId . evalT ff
 -- prop> distinct' xs == distinct' (flatMap (\x -> x :. x :. Nil) xs)
 
 distinct' :: (Ord a, Num a) => List a -> List a
-distinct' as =  eval' (filtering (\a -> state' (S.notMember a &&& S.insert a)) as) S.empty
+distinct' as =  eval' (filtering p as) S.empty
+  where p a = state' (S.notMember a &&& S.insert a)
 -- not done
 
 
@@ -182,8 +178,8 @@ distinct' as =  eval' (filtering (\a -> state' (S.notMember a &&& S.insert a)) a
 -- Empty
 
 distinctF :: (Ord a, Num a) => List a -> Optional (List a)
-distinctF =
-  error "todo: Course.StateT#distinctF"
+distinctF as = evalT (filtering p as) S.empty
+  where p a = StateT (if a > 100 then const Empty else Full . (S.notMember a &&& S.insert a))
 
 
 -- | An `OptionalT` is a functor of an `Optional` value.
