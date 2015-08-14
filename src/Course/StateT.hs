@@ -299,10 +299,12 @@ log1 l = Logger (l :. Nil)
 
 distinctG :: (Integral a, Show a) => List a -> Logger Chars (Optional (List a))
 distinctG as = runOptionalT $ evalT (filtering p as) S.empty
-  where p = \a -> StateT $ \s -> if a > 100 then (abort a s) else (check a s)
-        abort = \a _ -> OptionalT $ log1 (listh "aborting > 100: " ++ show' a) Empty -- '
-        check = \a s -> OptionalT $ logx a (Full (S.notMember a s, S.insert a s))
-        logx  = \a o -> if even a then log1 (listh "even number: " ++ show' a) o else Logger Nil o
+  where p = \a -> StateT $ \s -> OptionalT $ branch a s
+        branch = \a s -> if a > 100 then (abort_ a) Empty
+                                    else (if even a then even_ a else pure) (update a s)
+        update = \a s -> Full (S.notMember a s, S.insert a s)
+        abort_ = \a   -> log1 (listh "aborting > 100: " ++ show' a)
+        even_  = \a   -> log1 (listh "even number: " ++ show' a)
 
 {-
 -- t :: a -> S.Set a -> Optional (Bool, S.Set a)
