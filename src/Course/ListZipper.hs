@@ -561,8 +561,9 @@ insertPushRight x (ListZipper l a r) = ListZipper l x (a :. r)
 -- [5,12] >8< [15,24,12]
 
 instance Apply ListZipper where
-  (<*>) =
-    error "todo: Course.ListZipper (<*>)#instance ListZipper"
+  (<*>) (ListZipper ll f rr) (ListZipper l a r) =
+    ListZipper (zipWith ($) ll l) (f a) (zipWith ($) rr r)
+
 
 -- | Implement the `Apply` instance for `MaybeListZipper`.
 --
@@ -619,8 +620,11 @@ instance Applicative MaybeListZipper where
 -- [[1] >2< [3,4,5],[] >1< [2,3,4,5]] >[2,1] >3< [4,5]< [[3,2,1] >4< [5],[4,3,2,1] >5< []]
 
 instance Extend ListZipper where
-  (<<=) =
-    error "todo: Course.ListZipper (<<=)#instance ListZipper"
+  (<<=) f z = ListZipper (unfoldr (omap . moveLeft) z) (f z) (unfoldr (omap . moveRight) z)
+    where omap = ((<$>) (\z' -> (f z', z'))) . toOptional
+
+-- unfoldr :: (a -> Optional (b, a)) -> a -> List b -- '
+
 
 -- | Implement the `Extend` instance for `MaybeListZipper`.
 -- This instance will use the `Extend` instance for `ListZipper`.
@@ -634,7 +638,7 @@ instance Extend ListZipper where
 
 instance Extend MaybeListZipper where
   (<<=) _ IsNotZ  = IsNotZ
-  (<<=) f (IsZ z) = IsZ (f . IsZ <<= z)
+  (<<=) f (IsZ z) = IsZ ((f . IsZ) <<= z)
 
 
 -- | Implement the `Comonad` instance for `ListZipper`.
@@ -658,8 +662,13 @@ instance Comonad ListZipper where
 -- Empty
 
 instance Traversable ListZipper where
-  traverse =
-    error "todo: Course.ListZipper traverse#instance ListZipper"
+  traverse f (ListZipper l a r) =
+    (ListZipper . reverse) <$> traverse f (reverse l) <*> (f a) <*> traverse f r
+
+-- traverse :: Applicative f => (a -> f b) -> t a -> f (t b)
+-- traverse f = foldRight (\a b -> (:.) <$> f a <*> b) (pure Nil)
+-- not done
+
 
 -- | Implement the `Traversable` instance for `MaybeListZipper`.
 --
@@ -672,8 +681,9 @@ instance Traversable ListZipper where
 -- Full [1,2,3] >4< [5,6,7]
 
 instance Traversable MaybeListZipper where
-  traverse =
-    error "todo: Course.ListZipper traverse#instance MaybeListZipper"
+  traverse _ IsNotZ  = pure IsNotZ
+  traverse f (IsZ z) = IsZ <$> (traverse f z)
+
 
 -----------------------
 -- SUPPORT LIBRARIES --
