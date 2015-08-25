@@ -170,6 +170,8 @@ flbindParser =
 (>>>) :: Parser a -> Parser b -> Parser b
 (>>>) pp qq = bindParser (const qq) pp
 
+-- equivalent to *>
+
 
 -- | Return a parser that tries the first parser for a successful value.
 --
@@ -410,6 +412,9 @@ sequenceParser = sequence
 thisMany :: Int -> Parser a -> Parser (List a)
 thisMany n = sequence . replicate n
 
+single :: Parser a -> Parser (List a)
+single = thisMany 1
+
 
 -- | Write a parser for Person.age.
 --
@@ -427,8 +432,8 @@ thisMany n = sequence . replicate n
 -- True
 
 ageParser :: Parser Int
-ageParser =
-  error "todo: Course.Parser#ageParser"
+ageParser = natural >>= (\i -> if i > 0 then pure i else failed)
+
 
 -- | Write a parser for Person.firstName.
 -- /First Name: non-empty string that starts with a capital letter and is followed by zero or more lower-case letters/
@@ -442,8 +447,8 @@ ageParser =
 -- True
 
 firstNameParser :: Parser Chars
-firstNameParser =
-  error "todo: Course.Parser#firstNameParser"
+firstNameParser = (:.) <$> upper <*> list lower
+
 
 -- | Write a parser for Person.surname.
 --
@@ -461,8 +466,8 @@ firstNameParser =
 -- True
 
 surnameParser :: Parser Chars
-surnameParser =
-  error "todo: Course.Parser#surnameParser"
+surnameParser = flatten <$> sequenceParser (single upper :. thisMany 5 lower :. list lower :. Nil)
+
 
 -- | Write a parser for Person.smoker.
 --
@@ -480,8 +485,8 @@ surnameParser =
 -- True
 
 smokerParser :: Parser Char
-smokerParser =
-  error "todo: Course.Parser#smokerParser"
+smokerParser = is 'y' ||| is 'n'
+
 
 -- | Write part of a parser for Person#phoneBody.
 -- This parser will only produce a string of digits, dots or hyphens.
@@ -502,8 +507,8 @@ smokerParser =
 -- Result >a123-456< ""
 
 phoneBodyParser :: Parser Chars
-phoneBodyParser =
-  error "todo: Course.Parser#phoneBodyParser"
+phoneBodyParser = list (digit ||| is '-' ||| is '.')
+
 
 -- | Write a parser for Person.phone.
 --
@@ -524,8 +529,8 @@ phoneBodyParser =
 -- True
 
 phoneParser :: Parser Chars
-phoneParser =
-  error "todo: Course.Parser#phoneParser"
+phoneParser = (:.) <$> digit <*> phoneBodyParser <* is '#'
+
 
 -- | Write a parser for Person.
 --
@@ -573,8 +578,26 @@ phoneParser =
 -- Result > rest< Person {age = 123, firstName = "Fred", surname = "Clarkson", smoker = 'y', phone = "123-456.789"}
 
 personParser :: Parser Person
+personParser = Person <$>
+                 ageParser       <* spaces1 <*>
+                 firstNameParser <* spaces1 <*>
+                 surnameParser   <* spaces1 <*>
+                 smokerParser    <* spaces1 <*>
+                 phoneParser
+
+{-
 personParser =
-  error "todo: Course.Parser#personParser"
+  flbindParser ageParser (\a ->
+  spaces1 >>>
+  flbindParser firstNameParser (\f ->
+  spaces1 >>>
+  flbindParser surnameParser (\s ->
+  spaces1 >>>
+  flbindParser smokerParser (\g ->
+  spaces1 >>>
+  flbindParser phoneParser (
+  valueParser . Person a f s g)))))
+-}
 
 -- Make sure all the tests pass!
 
