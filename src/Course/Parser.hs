@@ -104,8 +104,10 @@ character = P (\i -> case i of
 -- Result >< 17
 
 mapParser :: (a -> b) -> Parser a -> Parser b
-mapParser =
-  error "todo: Course.Parser#mapParser"
+mapParser f (P p) = P (\i -> case p i of
+                               ErrorResult e -> ErrorResult e
+                               Result j a    -> Result j (f a))
+  
 
 -- | This is @mapParser@ with the arguments flipped.
 -- It might be more helpful to use this function if you prefer this argument order.
@@ -137,8 +139,10 @@ flmapParser = flip mapParser
 -- True
 
 bindParser :: (a -> Parser b) -> Parser a -> Parser b
-bindParser =
-  error "todo: Course.Parser#bindParser"
+bindParser f (P p) = P (\i -> case p i of
+                                ErrorResult e -> ErrorResult e
+                                Result j a    -> parse (f a) j)
+
 
 -- | This is @bindParser@ with the arguments flipped.
 -- It might be more helpful to use this function if you prefer this argument order.
@@ -164,8 +168,8 @@ flbindParser =
 -- True
 
 (>>>) :: Parser a -> Parser b -> Parser b
-(>>>) =
-  error "todo: Course.Parser#(>>>)"
+(>>>) pp qq = bindParser (const qq) pp
+
 
 -- | Return a parser that tries the first parser for a successful value.
 --
@@ -186,8 +190,9 @@ flbindParser =
 -- Result >abc< 'v'
 
 (|||) :: Parser a -> Parser a -> Parser a
-(|||) =
-  error "todo: Course.Parser#(|||)"
+(|||) (P p) (P q) = P (\i -> case p i of
+                                ErrorResult _ -> q i
+                                Result j a    -> Result j a)
 
 infixl 3 |||
 
@@ -215,8 +220,8 @@ infixl 3 |||
 -- Result >< ""
 
 list :: Parser a -> Parser (List a)
-list =
-  error "todo: Course.Parser#list"
+list pp = list1 pp ||| valueParser Nil
+
 
 -- | Return a parser that produces at least one value from the given parser then
 -- continues producing a list of values from the given parser (to ultimately produce a non-empty list).
@@ -233,8 +238,15 @@ list =
 -- True
 
 list1 :: Parser a -> Parser (List a)
-list1 =
-  error "todo: Course.Parser#list1"
+list1 pp = (:.) <$> pp <*> list pp
+
+{-
+list1 pp =
+  flbindParser pp        (\a ->
+  flbindParser (list pp) (\as ->
+  valueParser (a :. as)))
+-}
+
 
 -- | Return a parser that produces a character but fails if
 --
@@ -568,29 +580,31 @@ personParser =
 
 instance Functor Parser where
   (<$>) :: (a -> b) -> Parser a -> Parser b
-  (<$>) =
-     error "todo: Course.Parser (<$>)#instance Parser"
+  (<$>) = mapParser
+
 
 -- | Write a Apply instance for a @Parser@.
 -- /Tip:/ Use @bindParser@ and @valueParser@.
 
 instance Apply Parser where
   (<*>) :: Parser (a -> b) -> Parser a -> Parser b
-  (<*>) =
-    error "todo: Course.Parser (<*>)#instance Parser"
+  (<*>) ff pp = (<$> pp) =<< ff
+
+-- do { f <- ff; p <- pp; pure (f p) }
+
 
 -- | Write an Applicative functor instance for a @Parser@.
 
 instance Applicative Parser where
   pure :: a -> Parser a
-  pure =
-    error "todo: Course.Parser pure#instance Parser"
+  pure = valueParser
+
 
 -- | Write a Bind instance for a @Parser@.
 
 instance Bind Parser where
   (=<<) :: (a -> Parser b) -> Parser a -> Parser b
-  (=<<) =
-    error "todo: Course.Parser (=<<)#instance Parser"
+  (=<<) = bindParser
+
 
 instance Monad Parser where
