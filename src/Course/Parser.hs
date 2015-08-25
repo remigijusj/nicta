@@ -263,8 +263,8 @@ list1 pp =
 -- True
 
 satisfy :: (Char -> Bool) -> Parser Char
-satisfy =
-  error "todo: Course.Parser#satisfy"
+satisfy p = character >>= (\c -> if p c then pure c else unexpectedCharParser c)
+
 
 -- | Return a parser that produces the given character but fails if
 --
@@ -275,8 +275,8 @@ satisfy =
 -- /Tip:/ Use the @satisfy@ function.
 
 is :: Char -> Parser Char
-is =
-  error "todo: Course.Parser#is"
+is c = satisfy (== c)
+
 
 -- | Return a parser that produces a character between '0' and '9' but fails if
 --
@@ -287,8 +287,8 @@ is =
 -- /Tip:/ Use the @satisfy@ and @Data.Char#isDigit@ functions.
 
 digit :: Parser Char
-digit =
-  error "todo: Course.Parser#digit"
+digit = satisfy isDigit
+
 
 -- | Return a parser that produces zero or a positive integer but fails if
 --
@@ -311,8 +311,10 @@ digit =
 -- True
 
 natural :: Parser Int
-natural =
-  error "todo: Course.Parser#natural"
+natural = list1 digit >>= (\s -> case read s of
+                                   Empty  -> failed
+                                   Full i -> pure i)
+
 
 --
 -- | Return a parser that produces a space character but fails if
@@ -324,8 +326,8 @@ natural =
 -- /Tip:/ Use the @satisfy@ and @Data.Char#isSpace@ functions.
 
 space :: Parser Char
-space =
-  error "todo: Course.Parser#space"
+space = satisfy isSpace
+
 
 -- | Return a parser that produces one or more space characters
 -- (consuming until the first non-space) but fails if
@@ -337,8 +339,8 @@ space =
 -- /Tip:/ Use the @list1@ and @space@ functions.
 
 spaces1 :: Parser Chars
-spaces1 =
-  error "todo: Course.Parser#spaces1"
+spaces1 = list1 space
+
 
 -- | Return a parser that produces a lower-case character but fails if
 --
@@ -349,8 +351,8 @@ spaces1 =
 -- /Tip:/ Use the @satisfy@ and @Data.Char#isLower@ functions.
 
 lower :: Parser Char
-lower =
-  error "todo: Course.Parser#lower"
+lower = satisfy isLower
+
 
 -- | Return a parser that produces an upper-case character but fails if
 --
@@ -361,8 +363,8 @@ lower =
 -- /Tip:/ Use the @satisfy@ and @Data.Char#isUpper@ functions.
 
 upper :: Parser Char
-upper =
-  error "todo: Course.Parser#upper"
+upper = satisfy isUpper
+
 
 -- | Return a parser that produces an alpha character but fails if
 --
@@ -373,8 +375,8 @@ upper =
 -- /Tip:/ Use the @satisfy@ and @Data.Char#isAlpha@ functions.
 
 alpha :: Parser Char
-alpha =
-  error "todo: Course.Parser#alpha"
+alpha = satisfy isAlpha
+
 
 -- | Return a parser that sequences the given list of parsers by producing all their results
 -- but fails on the first failing parser of the list.
@@ -389,8 +391,10 @@ alpha =
 -- True
 
 sequenceParser :: List (Parser a) -> Parser (List a)
-sequenceParser =
-  error "todo: Course.Parser#sequenceParser"
+sequenceParser = sequence
+
+-- from Applicative
+
 
 -- | Return a parser that produces the given number of values off the given parser.
 -- This parser fails if the given parser fails in the attempt to produce the given number of values.
@@ -404,8 +408,8 @@ sequenceParser =
 -- True
 
 thisMany :: Int -> Parser a -> Parser (List a)
-thisMany =
-  error "todo: Course.Parser#thisMany"
+thisMany n = sequence . replicate n
+
 
 -- | Write a parser for Person.age.
 --
@@ -591,6 +595,7 @@ instance Apply Parser where
   (<*>) ff pp = (<$> pp) =<< ff
 
 -- do { f <- ff; p <- pp; pure (f p) }
+-- bindParser (\f -> bindParser (valueParser . f) pp) ff
 
 
 -- | Write an Applicative functor instance for a @Parser@.
