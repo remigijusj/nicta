@@ -268,6 +268,14 @@ satisfy :: (Char -> Bool) -> Parser Char
 satisfy p = character >>= (\c -> if p c then pure c else unexpectedCharParser c)
 
 
+-- jsonString-inspired self-made function
+
+attempt :: (Char -> Optional a) -> Parser a
+attempt f = character >>= (\c -> case f c of
+                                   Empty  -> unexpectedCharParser c
+                                   Full d -> pure d)
+
+
 -- | Return a parser that produces the given character but fails if
 --
 --   * The input is empty.

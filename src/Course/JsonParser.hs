@@ -106,9 +106,8 @@ toSpecialCharacter c =
 -- True
 
 jsonString :: Parser Chars
-jsonString = let convert = \c -> (fromSpecialCharacter <$> (toSpecialCharacter c)) ?? '?'
-                 regular = satisfyAll ((/= '\\') :. (/= '"') :. (not . isControl) :. Nil)
-                 special = is '\\' *> (convert <$> oneof "bfnrtv\'\"\\") -- "
+jsonString = let regular = satisfyAll ((/= '\\') :. (/= '"') :. (not . isControl) :. Nil)
+                 special = is '\\' *> (fromSpecialCharacter <$> attempt toSpecialCharacter)
                  unicode = is '\\' *> hexu
              in between (is '"') (charTok '"') (list (regular ||| special ||| unicode))
 
@@ -139,8 +138,10 @@ jsonString = let convert = \c -> (fromSpecialCharacter <$> (toSpecialCharacter c
 -- True
 
 jsonNumber :: Parser Rational
-jsonNumber =
-  error "todo: Course.JsonParser#jsonNumber"
+jsonNumber = P (\i -> case readFloats i of 
+                        Empty        -> ErrorResult Failed
+                        Full (n, i') -> Result i' n)
+
 
 -- | Parse a JSON true literal.
 --
@@ -242,8 +243,15 @@ jsonObject = let keyValuePair = (,) <$> (jsonString <* charTok ':') <*> jsonValu
 -- Result >< [("key1",JsonTrue),("key2",JsonArray [JsonRational False (7 % 1),JsonFalse]),("key3",JsonObject [("key4",JsonNull)])]
 
 jsonValue :: Parser JsonValue
-jsonValue =
-   error "todo: Course.JsonParser#jsonValue"
+jsonValue = spaces *> (
+              JsonString         <$> jsonString |||
+              JsonRational False <$> jsonNumber |||
+              JsonObject         <$> jsonObject |||
+              JsonArray          <$> jsonArray  |||
+              JsonTrue           <$  jsonTrue   |||
+              JsonFalse          <$  jsonFalse  |||
+              JsonNull           <$  jsonNull   )
+
 
 -- | Read a file into a JSON value.
 --
@@ -251,3 +259,8 @@ jsonValue =
 
 readJsonValue :: Filename -> IO (ParseResult JsonValue)
 readJsonValue fn = parse jsonValue <$> readFile fn
+
+{-
+readJsonValue fn = do c <- readFile fn
+                      pure (jsonValue `parse` c)
+-}
