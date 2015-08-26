@@ -70,8 +70,13 @@ toSpecialCharacter c =
               ('\\', Backslash) :.
               Nil
   in snd <$> find ((==) c . fst) table
-  
-  
+
+
+-- DIFFERENCE from json.org:
+-- + VerticalTab, SingleQuote
+-- - Slash
+
+
 -- | Parse a JSON string. Handle double-quotes, special characters, hexadecimal characters. See http://json.org for the full list of control characters in JSON.
 --
 -- /Tip:/ Use `hex`, `fromSpecialCharacter`, `between`, `is`, `charTok`, `toSpecialCharacter`.
@@ -101,8 +106,12 @@ toSpecialCharacter c =
 -- True
 
 jsonString :: Parser Chars
-jsonString =
-  error "todo: Course.JsonParser#jsonString"
+jsonString = let convert = \c -> (fromSpecialCharacter <$> (toSpecialCharacter c)) ?? '?'
+                 regular = satisfyAll ((/= '\\') :. (/= '"') :. (not . isControl) :. Nil)
+                 special = is '\\' *> (convert <$> oneof "bfnrtv\'\"\\") -- "
+                 unicode = is '\\' *> hexu
+             in between (is '"') (charTok '"') (list (regular ||| special ||| unicode))
+
 
 -- | Parse a JSON rational.
 --
