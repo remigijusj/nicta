@@ -8,14 +8,6 @@ import Course.List
 import Course.Functor
 import qualified Data.Set as S
 
--- Return all anagrams of the given string
--- that appear in the given dictionary file.
-fastAnagrams ::
-  Chars
-  -> Filename
-  -> IO (List Chars)
-fastAnagrams =
-  error "todo: Course.FastAnagrams#fastAnagrams"
 
 newtype NoCaseString =
   NoCaseString {
@@ -27,3 +19,15 @@ instance Eq NoCaseString where
 
 instance Show NoCaseString where
   show = show . ncString
+
+
+-- Return all anagrams of the given string
+-- that appear in the given dictionary file.
+
+fastAnagrams :: Chars -> Filename -> IO (List Chars)
+fastAnagrams word fn =
+  let perms = permutations word
+      analyse = flip (filter . flip S.member) perms . S.fromList . hlist
+   in analyse . lines <$> (readFile fn)
+
+-- not doen: copied analyse code
