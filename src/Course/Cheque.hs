@@ -304,7 +304,24 @@ illion =
 -- >>> dollars "456789123456789012345678901234567890123456789012345678901234567890.12"
 -- "four hundred and fifty-six vigintillion seven hundred and eighty-nine novemdecillion one hundred and twenty-three octodecillion four hundred and fifty-six septendecillion seven hundred and eighty-nine sexdecillion twelve quindecillion three hundred and forty-five quattuordecillion six hundred and seventy-eight tredecillion nine hundred and one duodecillion two hundred and thirty-four undecillion five hundred and sixty-seven decillion eight hundred and ninety nonillion one hundred and twenty-three octillion four hundred and fifty-six septillion seven hundred and eighty-nine sextillion twelve quintillion three hundred and forty-five quadrillion six hundred and seventy-eight trillion nine hundred and one billion two hundred and thirty-four million five hundred and sixty-seven thousand eight hundred and ninety dollars and twelve cents"
 
+describe :: Chars -> Chars
+describe s =
+  let digits = listOptional fromChar s
+   in unwords $ map showDigit digits    -- <<< TODO
+
+
+describeWith :: Chars -> Chars -> Chars
+describeWith unit s = 
+  let num = dropWhile (== '0') s
+      numz = if num == "" then "0" else num
+      suffix = if numz == "1" then "" else "s"
+   in describe numz ++ " " ++ unit ++ suffix
+
 
 dollars :: Chars -> Chars
 dollars s =
-  error "todo: Course.Cheque#dollars"
+  let (integer, fraction) = join (***) (filter isDigit) (break (== '.') s)
+      decimal = take 2 (fraction ++ "0")
+      ds = describeWith "dollar" integer
+      cs = describeWith "cent" decimal
+   in ds ++ " and " ++ cs
